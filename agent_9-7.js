@@ -324,7 +324,7 @@ function flow_ctr(){
         }
         auto_fan1 = function(){
             modbusClient.setID(4);
-            modbusClient.writeRegister(0x0201, 30*0)
+            modbusClient.writeRegister(0x0201, 30*10)
             .then(function(){
                 Fan1Value = 30;
     	        modbusClient.writeCoil(0x4B, true)
@@ -371,7 +371,7 @@ function flow_ctr(){
 //采集的量
 var current, temp, flowmeter, level01, level02, level03=0, level04=0;
 var orp01, orp02, do01, ph, nn, codo, cod, bod, an, tn, tp;
-
+var orp03, orp04, orp282_1, orp282_2;
 //控制量
 var Pump1Status = false;  //进水泵
 var Pump2Status = false;  //硝化液回流泵
@@ -458,6 +458,21 @@ function tick() {
       break;
     case 26:
       orp01_read();
+      break;
+    case 28:
+      orp02_read();
+      break;
+    case 30:
+      orp03_read();
+      break;
+    case 32:
+      orp04_read();
+      break;
+    case 34:
+      orp282_1_read();
+      break;
+    case 36:
+      orp282_2_read();
       break;
     case 38:
       sendMQTT();
@@ -581,7 +596,81 @@ function orp01_read(){
    }
   });
 }
-
+function orp02_read(){
+  modbusClient.setID(16);
+  modbusClient.readHoldingRegisters(0x0C, 2, function(err, data) {
+    if(err)
+    {console.log("read orp02 error");}
+   else{
+      var cvt = new Array();
+      cvt[0] = data.data[0]>>8;
+      cvt[1] = data.data[0]&0x00ff;
+      cvt[2] = data.data[1]>>8;
+      cvt[3] = data.data[1]&0x00ff;
+      orp02 = ieee754.read(cvt, 0, false, 23, 4);
+   }
+  });
+}
+function orp03_read(){
+  modbusClient.setID(16);
+  modbusClient.readHoldingRegisters(0x14, 2, function(err, data) {
+    if(err)
+    {console.log("read orp02 error");}
+   else{
+      var cvt = new Array();
+      cvt[0] = data.data[0]>>8;
+      cvt[1] = data.data[0]&0x00ff;
+      cvt[2] = data.data[1]>>8;
+      cvt[3] = data.data[1]&0x00ff;
+      orp03 = ieee754.read(cvt, 0, false, 23, 4);
+   }
+  });
+}
+function orp04_read(){
+  modbusClient.setID(16);
+  modbusClient.readHoldingRegisters(0x1C, 2, function(err, data) {
+    if(err)
+    {console.log("read orp02 error");}
+   else{
+      var cvt = new Array();
+      cvt[0] = data.data[0]>>8;
+      cvt[1] = data.data[0]&0x00ff;
+      cvt[2] = data.data[1]>>8;
+      cvt[3] = data.data[1]&0x00ff;
+      orp04 = ieee754.read(cvt, 0, false, 23, 4);
+   }
+  });
+}
+function orp282_1_read(){
+  modbusClient.setID(5);
+  modbusClient.readHoldingRegisters(0x04, 2, function(err, data) {
+    if(err)
+    {console.log("read orp02 error");}
+   else{
+      var cvt = new Array();
+      cvt[0] = data.data[0]>>8;
+      cvt[1] = data.data[0]&0x00ff;
+      cvt[2] = data.data[1]>>8;
+      cvt[3] = data.data[1]&0x00ff;
+      orp282_1 = ieee754.read(cvt, 0, false, 23, 4);
+   }
+  });
+}
+function orp282_2_read(){
+  modbusClient.setID(5);
+  modbusClient.readHoldingRegisters(0x0C, 2, function(err, data) {
+    if(err)
+    {console.log("read orp02 error");}
+   else{
+      var cvt = new Array();
+      cvt[0] = data.data[0]>>8;
+      cvt[1] = data.data[0]&0x00ff;
+      cvt[2] = data.data[1]>>8;
+      cvt[3] = data.data[1]&0x00ff;
+      orp282_2 = ieee754.read(cvt, 0, false, 23, 4);
+   }
+  });
+}
 function temp_read(){
   modbusClient.setID(7);
   modbusClient.readHoldingRegisters(0x00, 2, function(err, data) {
@@ -678,8 +767,8 @@ function sendMQTT() {
 
   current = 10+Math.random()*5;
   level02 = 10+Math.random()*5;
-  orp01 = 20+Math.random()*5;
-  orp02 = 20+Math.random()*5;
+  //orp01 = 20+Math.random()*5;
+  //orp02 = 20+Math.random()*5;
   do01 = 30+Math.random()*5;
   ph = 6.5+Math.random()*1;
   nn = 30+Math.random()*5;
@@ -699,6 +788,10 @@ function sendMQTT() {
         
         "orp01": orp01,
         "orp02": orp02,
+        "orp03": orp03,
+        "orp04": orp04,
+        "orp282_1": orp282_1,
+        "orp282_2": orp282_2,
         "do01": do01,
         "ph": ph,
         "nn": nn,
