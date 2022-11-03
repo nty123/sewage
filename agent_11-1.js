@@ -574,7 +574,7 @@ function mud_ctrc(){
 }
 */
 
-/*没执行*/
+
 
 function tp_read(){
   modbusClient.setID(12);
