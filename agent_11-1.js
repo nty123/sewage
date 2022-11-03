@@ -285,17 +285,25 @@ mqttClient.on('message', function (topic, message) {
 
 /*排泥阀到点工作 */
 
-new CronJob('0 0 15 * * *',function(){
-  mud_ctro = function (){
-    modbusClient.setID(3);
-    modbusClient.writeCoil(255, true);
-  }
+new CronJob('0 30 14 * * *',function(){
+  mud_ctro = function(){
+  	modbusClient.setID(3);
+  	modbusClient.writeCoil(255, true)
+  	.then(function(){
+  		Valve1Status = true
+  	})
+	}
+  console.log("14:30")
 },null,true);
-new CronJob('0 01 15 * * *',function(){
-  mud_ctrc = function (){
-    modbusClient.setID(3);
-    modbusClient.writeCoil(255, false);
-  }
+new CronJob('0 32 14 * * *',function(){
+  mud_ctrc = function(){
+  	modbusClient.setID(3);
+  	modbusClient.writeCoil(255, false)
+  	.then(function(){
+  		Valve1Status = false
+  	})
+	}
+  console.log("14:32")
 },null,true);
 
 /**
@@ -432,32 +440,32 @@ var Pump8Value = 0;   // 碳源加药泵
 // var flag_a2h = false;
 var auto = false;
 var ctrlReq = false;
-// var manual = false;  //手动控制
+var manual = false;  //手动控制
 var auto_DO = false; ///自动控制coil
 var auto_fan1 = false;
 var counter = 39;
 var mud_ctro = false
-var mud_ctrc =false
+var mud_ctrc = false
 function tick() {
   if (counter == 39) counter=0; else counter++;
   console.log('>>'+counter);
   if (counter%2) {
-    if(mud_ctro!=false){
-      mud_ctro()
-      mud_ctro = false
-    }
-    if(mud_ctrc!=false){
-      mud_ctrc()
-      mud_ctrc = false
-    }
-    if(auto==false){
-        if(counter==17&&auto_DO!=false){
-            auto_DO();
-        }
-        if(counter==19&&auto_fan1!=false){
-            auto_fan1();
-        }
-    }
+  	if(mud_ctro!=false){
+  		mud_ctro()
+  		mud_ctro = false	
+  	}
+  	if(mud_ctrc!=false){
+  		mud_ctrc()
+  		mud_ctrc=false
+  	}
+    // if(auto==false){
+    //     if(counter==17&&auto_DO!=false){
+    //         auto_DO();
+    //     }
+    //     if(counter==19&&auto_fan1!=false){
+    //         auto_fan1();
+    //     }
+    // }
     sendCtrl();
     return;
   }
@@ -484,20 +492,21 @@ function tick() {
       break;
     case 12:
       level04_read();
-      break;
-    
+      break;  
     case 14:
-      flowmeter_read();//读到水流量就设置auto
+      flowmeter_read(flow_ctr);//读到水流量就设置auto
       break;
     case 16:
-      flow_ctr();
+      if(auto==false&&auto_DO!=false){
+        auto_DO();
+      }
       break;
-      //break;
-    
-    //case 18:
-      //orp282_2_read();
-      //break;
-    
+    case 18:
+      if(auto==false&&auto_fan1!=false){
+        auto_fan1();
+      }
+      break;
+      
     case 20:
       cod_read();
       break;
@@ -548,15 +557,22 @@ var orp01, orp02, do01, ph, nn, codo, cod, bod, an, tn, tp;
 var Fan1realValue,Fan2realValue;
 
 /*开关排泥阀 */
-
+/*
 function mud_ctro(){
   modbusClient.setID(3);
-  modbusClient.writeCoil(255, true);
+  modbusClient.writeCoil(255, true)
+  .then(function(){
+  	Valve1Status = true
+  	})
 }
 function mud_ctrc(){
   modbusClient.setID(3);
-  modbusClient.writeCoil(255, false);
+  modbusClient.writeCoil(255, false)
+  .then(function(){
+  	Valve1Status = false
+  	})
 }
+*/
 
 /*没执行*/
 
@@ -834,7 +850,7 @@ function level04_read(){
    }
   });
 }
-function flowmeter_read(){
+function flowmeter_read(callback){
   modbusClient.setID(18);
   modbusClient.readInputRegisters(0x1010, 2, function(err, data) {
     if(err)
@@ -843,7 +859,7 @@ function flowmeter_read(){
     	auto_DO = false;
     	auto_fan1 = false;
     	flow_error=false;
-      //callback(false);
+      callback();
     }
    else{
    	  flow_error=true;
@@ -853,7 +869,7 @@ function flowmeter_read(){
       cvt[2] = data.data[1]>>8;
       cvt[3] = data.data[1]&0x00ff;
       flowmeter = ieee754.read(cvt, 0, false, 23, 4);
-      //callback(true);
+      callback();
    }
   });
 }
